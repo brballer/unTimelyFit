@@ -15,6 +15,7 @@ Jun 9: change _ICRS to _ICRS
 Nov 3, 2025: Add wise w extended source flag
 Jul 11, 2026: fixed logic error using getObjectType. 'NA' was counted as a galaxy
 Jul 15, 2025: Added chkRemote
+Aug 5, 2026: Added Simbad webbrowser
 '''''
 
 import warnings
@@ -159,7 +160,6 @@ while True:
     cntGal = 0
     cntStar = 0
     inGaia = False
-    inSimbad = False
     inBDCat = False
     artifactFlag = False
     isFaint = False
@@ -643,33 +643,34 @@ while True:
     #chkVarCat(rafl,defl,True)
     # color-color BD selections from arXiv 2302.15156
     print('cntStar {:.2f} cntGal {:.2f}'.format(cntStar,cntGal))
-    if cntStar >= cntGal:
-        sTableList = None
-        for ntry in range(2):
-            try:
-                sTableList = Simbad.query_region(skyCoord,radius=4*fieldOfView)
-                break
-            except Exception:
-                print('No Simbad response. Waiting 4 seconds to try again')
-                time.sleep(4)
-        if sTableList:
-            print('Simbad object:',end=' ')
-            for row in sTableList:
-                print(row[0],end=' ')
-            print()
-            inSimbad = True
-        else:
-            print('not in Simbad')
+    sTableList = None
+    for ntry in range(2):
+        try:
+            sTableList = Simbad.query_region(skyCoord,radius=4*fieldOfView)
+            break
+        except Exception:
+            print('No Simbad response. Waiting 4 seconds to try again')
+            time.sleep(4)
+    if sTableList:
+        print('Simbad object:',end=' ')
+#            print(sTableList)
+        for row in sTableList:
+            print(row[0],end=' ')
+        print()
+        print(bcolors.red+'In Simbad --> CHECK IT OUT'+bcolors.reset)
+        import webbrowser
+        webbrowser.open('https://simbad.cds.unistra.fr/simbad/sim-coo?Coord={:.7f} {:.7f}+&CooFrame=FK5&CooEpoch=2000&CooEqui=2000&CooDefinedFrames=none&Radius=20&Radius.unit=arcsec&submit=submit+query&CoordList='.format(rafl,defl))
+    else:
+        print('not in Simbad')
+
+    if isMType:
+        print(bcolors.red+'M type'+bcolors.reset)        
     if inGaia:
         print(bcolors.red+'In Gaia'+bcolors.reset)
     elif cntGal > cntStar:
         print(bcolors.red+'Looks like a galaxy'+bcolors.reset)
     elif isFaint:
         print(bcolors.red+'Too faint'+bcolors.reset)
-    elif isMType:
-        print(bcolors.red+'M type'+bcolors.reset)        
     elif inBDCat:
         print(bcolors.red+'Known BD'+bcolors.reset)        
-    elif inSimbad:
-        print(bcolors.red+'In Simbad --> KEEP IT'+bcolors.reset)
     print('Locations visited',len(raList))
