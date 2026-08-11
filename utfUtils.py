@@ -294,7 +294,7 @@ def photDistWISE(w1, w2, prt=False):
     return W1_d, W1_ed, W2_d, W2_ed
 
 def photDistJK(w1,w2,jmag,ejmag,kmag,ekmag,prt=False):
-    # ala photoDistWISE
+    # ala photDistWISE
     espt = 2 # assumed error on the spectral type
     samp = 10000 # number of samples for estimating the distance uncertainty
     _, spti = spType(w1,w2) # get the spt index, ignore bdt
@@ -412,15 +412,15 @@ def fitQuality(result,catl,ptFit=False):
 def getCatFiles(tileCache,coaddID):
     # copy the C2020 tables to a local subdirectory of the current path.
     # First see if they already exist
-    catFiles = tileCache+coaddID+'_*'
+    catFiles = tileCache+coaddID+'_cat.tbl'
     import glob
     files = glob.glob(catFiles)
     if len(files) > 0:
-        print('files already exist in',catFiles)
+        print('gCF: files already exist in',catFiles)
         return 0
     baseURL = 'https://portal.nersc.gov/project/cosmo/data/CatWISE/2020/'
     srcDir = baseURL + coaddID[0:3] + '/'
-    print('getCatFiles: srcDir',srcDir)
+    print('gCF: srcDir',srcDir)
     import ssl
     myssl = ssl.create_default_context()
     myssl.check_hostname=False
@@ -431,7 +431,7 @@ def getCatFiles(tileCache,coaddID):
     try:
         response = urlopen(srcDir,context=myssl)
     except Exception:
-        print('getCatFiles: no response from nersc')
+        print('gCF: no response from nersc')
         return 1
     string = response.read().decode('utf-8')
     # insert new line characters
@@ -562,7 +562,7 @@ def printResult(caller,result,printLevel):
         print('nEpochs {}/{}'.format(result['npts'],result['npts']+result['nIter']),end=' ')
     print()
     print('\tmags {:.1f} {:.1f}'.format(result['w1mag'],result['w2mag']),end=' ')
-    print('pMov {:.2f} pNoMov {:.2f}'.format(result['sf'],result['sfPt']),end=' ')
+    print('SF {:.2f} SFPt {:.2f}'.format(result['sf'],result['sfPt']),end=' ')
     if printLevel > 0:
         if result['fracflux'] < 0.8:
             print(bcolors.red+'fracflux {:.2f}'.format(result['fracflux'])+bcolors.reset,end=' ')
