@@ -24,7 +24,7 @@ from pStar import getDESI, queryLS_DR10
 from utfUtils import getUntimeFits,saveCoaddID,getCatFiles,loadCalibration
 from utfUtils import CID, saveCID, next1
 
-logFile = 'coaddID.txt'
+logFile = './coaddID.txt'
 
 # Only process tiles in a specified RA range. Each user should only process tiles in their
 # agreed upon RA range if the intent is to submit TYGOs
@@ -39,30 +39,35 @@ try:
 except Exception:
     # Nope. Get the last coaddID from coaddID.txt and find the next one in the specified range
     coaddID = next1(logFile,loRA,hiRA)
-if coaddID == 'NA':
-    print('No coaddID found in RA range',loRA,hiRA,'You are all done')
-    exit(0)
-
-if os.path.exists(coaddID+'_utfcat.tbl'):
-    print('The UTF catalog for this tile exists. Already processed')
-    exit(0)
 
 with open(logFile) as f:
     for line in f:
         if re.search(coaddID,line):
-            print(coaddID,'exists in coaddID.txt. Already processed')
+            print(coaddID,'exists in coaddID.txt. Already processed',line)
             exit(0)
 
-# stash the current coaddID
+# stash the current coaddID in a pickle file for easy access
 saveCID(CID(coaddID))
 
 # ensure that the cache directory exists
-tileCache = 'tileCache/'
+tileCache = './tileCache/'
 if not os.path.exists(tileCache):
     print(tileCache,'doesnt exist. Making it')
     os.system('mkdir '+tileCache)
 
+# See if there are leftover files from the previous job
+import glob
+cacheFiles = glob.glob(tileCache+'*')
+if len(cacheFiles) > 0:
+    print('files exist in',tileCache)
+    print('chk',cacheFiles)
+    ans = input('Continue?')
+    if ans != 'y':
+        exit(0)
+
 tick = time.perf_counter()
+# try to create the ls_dr10 table
+#queryLS_DR10(tileCache,coaddID)
 # try to make the DESI table for this tile
 getDESI(coaddID)
 if getCatFiles(tileCache, coaddID) > 0:
@@ -73,22 +78,22 @@ rets = os.system('chkUTF.py '+coaddID)
 if rets != 0:
     print('chkUTF failed. Try again')
     os.system('osascript pingme.scpt 6309455586 "job is done"')
-    exit()
-# try to create the ls_dr10 table
+    exit(0)
+# try to create the ls_dr10 table again. This is only useful if the first attempt failed.
 queryLS_DR10(tileCache,coaddID)
 loadCalibration(tileCache,coaddID)
 rets = os.system('caffeinate -d -i /Users/bruceballer/Documents/plan9/processTile.py '+tileCache+' '+coaddID)
 if rets != 0:
     print('processTile failed',rets)
-    saveCoaddID(logFile,coaddID,' failed')
-    exit()
-os.system('scanTile.py '+coaddID)
-# save it for reference
-saveCoaddID(logFile,coaddID)
-tock = time.perf_counter()
-mins = (tock-tick)/60.
-print('Elapsed time {:.0f} minutes {:.1f} hours'.format(mins,mins/60))
-if os.path.exists(coaddID+'_candidates.txt'):
-    os.system('open ' + coaddID + '_candidates.txt')
-# send me a text message
-os.system('osascript pingme.scpt 6309455586 "job is done"')
+    saveCoaddID(logFile,coaddID,comment='failed')
+else:
+    os.system('scanTile.py '+coaddID)
+    # save it for reference
+    saveCoaddID(logFile,coaddID,comment='OK')
+    tock = time.perf_counter()
+    mins = (tock-tick)/60.
+    print('Elapsed time {:.0f} minutes {:.1f} hours'.format(mins,mins/60))
+    if os.path.exists(coaddID+'_candidates.txt'):
+        os.system('open ' + coaddID + '_candidates.txt')
+    # send me a text message
+    os.system('osascript pingme.scpt 6309455586 "job is done"')
