@@ -53,9 +53,11 @@ def getBlockList(outPath):
         if os.path.exists(locFile):
             locations = np.load(locFile)
             nBlocks = len(locations)
+            ''''' # let processBlock deal with this
             if nBlocks > 50:
                 print('Too many blocks to process. Quitting')
                 return []
+            '''''
             logEntry(outPath,nBlocks)
         else:
             return []
@@ -176,11 +178,14 @@ if __name__ == '__main__':
     print('processTile: Loading locations in',blockSize,'size blocks',end=' ')
     nBlocks = loadLocations(catFile,blockSize,tileCache)
     print(' -> {} blocks'.format(nBlocks))
+    if nBlocks > 50:
+        print('processTile: too many blocks')
+        exit(1)
     # get a list of blocks that haven't been completed
     blockList = getBlockList(tileCache)
     if len(blockList) == 0:
         print('processTile done.')
-        exit()
+        exit(0)
     cpuCount = mp.cpu_count()
     print('processTile: start processing cpu_count',cpuCount)
     nLocPerBlock = -1
@@ -190,9 +195,7 @@ if __name__ == '__main__':
         args = coaddID,blockIndex,nLocPerBlock,tileCache
         jobs.append(args)
     res = pool.map(processBlock,jobs)
-    res = os.system('stackCache.py '+tileCache+' '+coaddID)
+    res = os.system('stackCache.py '+coaddID)
     if res != 0:
         raise Exception('stackCache failed')
     print('stackCache done')
-    print('----> commented out chkUTF in processTile. Is it needed?')
-    #os.system('chkUTF.py '+coaddID)
