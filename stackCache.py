@@ -17,14 +17,11 @@ Modified: April 5, 2024
 Jan 6, 2026: Comment out npy file stacking
 '''''
 
-cacheDir = sys.argv[1]
-if not os.path.exists(cacheDir):
-    raise RuntimeError('Directory doesnt exist: '+cacheDir)
-coaddID = sys.argv[2]
-
+coaddID = sys.argv[1]
+tileCache = './tileCache/'
 # list of the file names
 tblFiles = []
-for fileName in os.listdir(cacheDir):
+for fileName in os.listdir(tileCache):
     # ignore the C2020 catalog
     if fileName.endswith('cat.tbl'):
         continue
@@ -37,8 +34,8 @@ if len(tblFiles) > 0:
     outName = tblFiles[0]
     if not outName.endswith('_000.tbl'):
         raise RuntimeError('The first table file doesnt have the form "_000.tbl": '+outName)
-#    outName = cacheDir+'/'+outName.replace('_000','')
-    outName = outName.replace('_000','')
+    outName = tileCache+outName.replace('_000','')
+#    outName = outName.replace('_000','')
     if os.path.exists(outName):
         print('The stacked table '+outName+' exists. Delete it and try again')
         raise RuntimeError('The stacked table '+outName+' exists')
@@ -48,7 +45,7 @@ if len(tblFiles) > 0:
     bigTbl = Table()
     first = True
     for tblName in tblFiles:
-        fname = cacheDir+'/'+tblName
+        fname = tileCache+tblName
         if first:
             first = False
             bigTbl = Table.read(fname,format='ipac')
